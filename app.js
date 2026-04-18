@@ -37,16 +37,44 @@ const ANIMALS = [
   { name: 'Raven', draw: drawRaven }
 ];
 
-const PALETTES = [
-  { primary: '#8b1a1a', secondary: '#c5952a', accent: '#1a2744' },   // crimson & gold
-  { primary: '#1a2744', secondary: '#c5952a', accent: '#8b1a1a' },   // navy & gold
-  { primary: '#2a4a2a', secondary: '#c5952a', accent: '#1a2744' },   // forest & gold
-  { primary: '#4a1a4a', secondary: '#c5952a', accent: '#2a4a2a' },   // purple & gold
-  { primary: '#1a2744', secondary: '#b8860b', accent: '#8b1a1a' },   // navy & dark gold
-  { primary: '#5c1a1a', secondary: '#d4a439', accent: '#2a4a2a' },   // dark crimson & bright gold
-  { primary: '#2a3a1a', secondary: '#c49a2a', accent: '#4a1a2a' },   // olive & gold
-  { primary: '#3a1a2a', secondary: '#b8942a', accent: '#1a3a44' },   // maroon & gold
-];
+// Each trait maps to heraldic meaning: animals it favors (weighted),
+// preferred palette tones, patterns, and motto fragments.
+// When the user picks 3 traits, votes are aggregated across these pools,
+// so choices directly shape the emblem instead of being just a hash seed.
+const TRAIT_MEANINGS = {
+  ambitious:  { animals: ['Eagle', 'Griffin', 'Lion'],    palette: 'royal',    pattern: 'pale',       virtue: 'Vision',    closer: 'We Ascend' },
+  curious:    { animals: ['Owl', 'Raven', 'Serpent'],     palette: 'twilight', pattern: 'saltire',    virtue: 'Wisdom',    closer: 'The Path Opens' },
+  loyal:      { animals: ['Wolf', 'Stag', 'Bear'],        palette: 'forest',   pattern: 'fess',       virtue: 'Honor',     closer: 'We Stand' },
+  brave:      { animals: ['Lion', 'Bear', 'Boar'],        palette: 'crimson',  pattern: 'chevron',    virtue: 'Courage',   closer: 'I Conquer' },
+  wise:       { animals: ['Owl', 'Raven', 'Stag'],        palette: 'twilight', pattern: 'cross',      virtue: 'Wisdom',    closer: 'Light Persists' },
+  creative:   { animals: ['Griffin', 'Serpent', 'Raven'], palette: 'violet',   pattern: 'quarterly',  virtue: 'Vision',    closer: 'All Burns Bright' },
+  stoic:      { animals: ['Stag', 'Bear', 'Owl'],         palette: 'navy',     pattern: 'stripe',     virtue: 'Fortitude', closer: 'I Endure' },
+  generous:   { animals: ['Stag', 'Lion', 'Griffin'],     palette: 'gold',     pattern: 'cross',      virtue: 'Grace',     closer: 'Light Persists' },
+  fierce:     { animals: ['Lion', 'Wolf', 'Boar'],        palette: 'crimson',  pattern: 'saltire',    virtue: 'Fury',      closer: 'I Conquer' },
+  gentle:     { animals: ['Stag', 'Owl', 'Raven'],        palette: 'verdant',  pattern: 'fess',       virtue: 'Grace',     closer: 'Light Persists' },
+  cunning:    { animals: ['Serpent', 'Wolf', 'Raven'],    palette: 'shadow',   pattern: 'bend',       virtue: 'Vision',    closer: 'The Path Opens' },
+  honest:     { animals: ['Stag', 'Lion', 'Eagle'],       palette: 'royal',    pattern: 'cross',      virtue: 'Truth',     closer: 'Light Persists' },
+  patient:    { animals: ['Owl', 'Bear', 'Stag'],         palette: 'verdant',  pattern: 'stripe',     virtue: 'Patience',  closer: 'I Endure' },
+  bold:       { animals: ['Lion', 'Eagle', 'Griffin'],    palette: 'crimson',  pattern: 'chevron',    virtue: 'Courage',   closer: 'I Rise' },
+  humble:     { animals: ['Raven', 'Owl', 'Stag'],        palette: 'shadow',   pattern: 'fess',       virtue: 'Grace',     closer: 'We Stand' },
+  passionate: { animals: ['Lion', 'Griffin', 'Boar'],     palette: 'crimson',  pattern: 'saltire',    virtue: 'Fury',      closer: 'All Burns Bright' },
+  resilient:  { animals: ['Bear', 'Boar', 'Wolf'],        palette: 'forest',   pattern: 'chevron',    virtue: 'Fortitude', closer: 'I Endure' },
+  witty:      { animals: ['Raven', 'Owl', 'Serpent'],     palette: 'violet',   pattern: 'bend',       virtue: 'Wisdom',    closer: 'The Path Opens' },
+  kind:       { animals: ['Stag', 'Owl', 'Lion'],         palette: 'gold',     pattern: 'fess',       virtue: 'Grace',     closer: 'Light Persists' },
+  tenacious:  { animals: ['Boar', 'Wolf', 'Bear'],        palette: 'shadow',   pattern: 'pale',       virtue: 'Resolve',   closer: 'I Prevail' }
+};
+
+const PALETTE_MAP = {
+  crimson:  { primary: '#8b1a1a', secondary: '#c5952a', accent: '#1a2744' },  // crimson & gold — fire, blood, valor
+  navy:     { primary: '#1a2744', secondary: '#c5952a', accent: '#8b1a1a' },  // navy & gold — steady, loyal
+  forest:   { primary: '#2a4a2a', secondary: '#c5952a', accent: '#1a2744' },  // forest & gold — rooted
+  violet:   { primary: '#4a1a4a', secondary: '#c5952a', accent: '#2a4a2a' },  // violet & gold — creative, strange
+  royal:    { primary: '#1a2744', secondary: '#b8860b', accent: '#8b1a1a' },  // navy & dark gold — regal
+  twilight: { primary: '#2a2044', secondary: '#b8a630', accent: '#1a3a44' },  // twilight blue — wise, curious
+  verdant:  { primary: '#2a3a1a', secondary: '#c49a2a', accent: '#4a1a2a' },  // verdant olive — gentle, patient
+  shadow:   { primary: '#2a1a2a', secondary: '#b8942a', accent: '#1a3a44' },  // shadow — humble, cunning
+  gold:     { primary: '#5c3a1a', secondary: '#d4a439', accent: '#2a4a2a' },  // gold & earth — generous
+};
 
 const MOTTO_PARTS = {
   openers: [
@@ -64,6 +92,37 @@ const MOTTO_PARTS = {
 };
 
 const PATTERNS = ['chevron', 'stripe', 'quarterly', 'pale', 'cross', 'saltire', 'bend', 'fess'];
+
+// === Trait-driven pickers ===
+// Tally votes across the 3 selected traits and break ties deterministically
+// using the name-seeded RNG, so two different trait sets always yield
+// meaningfully different emblems — but the same inputs reproduce the same result.
+function tallyVotes(traits, key) {
+  const tally = {};
+  traits.forEach(t => {
+    const meaning = TRAIT_MEANINGS[t];
+    if (!meaning) return;
+    const val = meaning[key];
+    if (Array.isArray(val)) {
+      val.forEach((v, i) => {
+        // earlier entries in the list get more weight
+        const w = val.length - i;
+        tally[v] = (tally[v] || 0) + w;
+      });
+    } else if (val) {
+      tally[val] = (tally[val] || 0) + 1;
+    }
+  });
+  return tally;
+}
+
+function pickFromTally(tally, rand) {
+  const entries = Object.entries(tally);
+  if (entries.length === 0) return null;
+  const maxScore = Math.max(...entries.map(e => e[1]));
+  const topChoices = entries.filter(e => e[1] === maxScore).map(e => e[0]);
+  return topChoices[Math.floor(rand() * topChoices.length)];
+}
 
 const COMPUTING_MESSAGES = [
   'The blacksmith heats the iron... consulting ancient heraldic tomes...',
@@ -131,17 +190,24 @@ document.getElementById('input-form').addEventListener('submit', function (e) {
 
 // === Emblem generation ===
 function generateEmblem(name, traits) {
-  const seedStr = name.toLowerCase() + traits.sort().join('');
+  const seedStr = name.toLowerCase() + traits.slice().sort().join('');
   const seed = hash(seedStr);
   const rand = seededRandom(seed);
 
-  const palette = PALETTES[Math.floor(rand() * PALETTES.length)];
-  const animal = ANIMALS[Math.floor(rand() * ANIMALS.length)];
-  const pattern = PATTERNS[Math.floor(rand() * PATTERNS.length)];
+  // Traits vote for specific heraldic elements. Name only breaks ties, so the
+  // emblem reflects your choices, not your name hash.
+  const animalName = pickFromTally(tallyVotes(traits, 'animals'), rand);
+  const paletteKey = pickFromTally(tallyVotes(traits, 'palette'), rand);
+  const pattern    = pickFromTally(tallyVotes(traits, 'pattern'), rand);
+  const virtue     = pickFromTally(tallyVotes(traits, 'virtue'), rand);
+  const closer     = pickFromTally(tallyVotes(traits, 'closer'), rand);
+
+  const animal = ANIMALS.find(a => a.name === animalName) || ANIMALS[0];
+  const palette = PALETTE_MAP[paletteKey] || PALETTE_MAP.crimson;
 
   const mottoOpener = MOTTO_PARTS.openers[Math.floor(rand() * MOTTO_PARTS.openers.length)];
-  const mottoVirtue = MOTTO_PARTS.virtues[Math.floor(rand() * MOTTO_PARTS.virtues.length)];
-  const mottoCloser = MOTTO_PARTS.closers[Math.floor(rand() * MOTTO_PARTS.closers.length)];
+  const mottoVirtue = virtue || MOTTO_PARTS.virtues[0];
+  const mottoCloser = closer || MOTTO_PARTS.closers[0];
   const motto = mottoOpener + ' ' + mottoVirtue + ', ' + mottoCloser;
 
   const canvas = document.getElementById('emblem-canvas');
@@ -191,9 +257,11 @@ function generateEmblem(name, traits) {
   document.getElementById('restart-btn').style.display = 'block';
 
   const traitStr = traits.join(', ');
+  const paletteName = (paletteKey || 'crimson').replace(/^./, c => c.toUpperCase());
   document.getElementById('result-copy').textContent =
-    'The forge has spoken for ' + name + '. Bearing the mark of the ' + animal.name +
-    ', those who are ' + traitStr + ' carry this crest through all trials.';
+    'The forge has spoken for ' + name + '. Your ' + traitStr +
+    ' nature summoned the ' + animal.name + ' upon a ' + paletteName +
+    ' field in the ' + pattern + ' pattern, crowned with the motto: "' + motto + '."';
 }
 
 // === Drawing helpers ===
